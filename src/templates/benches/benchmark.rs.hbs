@@ -1,0 +1,97 @@
+use criterion::\\\{{black_box, criterion_group, criterion_main, Criterion\\\}};
+use etch::\\\{{Blockchain, ChainConfig, Difficulty, Payload, crypto::generate_keypair\\\}};
+use std::path::Path;
+
+fn bench_block_validation(c: &mut Criterion) \\\{{
+    let keys = generate_keypair();
+    let dir = tempfile::tempdir().unwrap();
+    let mut chain = Blockchain::open(dir.path(), ChainConfig::mainnet()).unwrap();
+
+    let payload = Payload([0u8; \\{{consensus.payload_size_bytes\\\}}]);
+    let mut block = chain.build_block(keys.verifying_key().to_bytes(), 0, vec![payload]).unwrap();
+
+    let difficulty = Difficulty::new([
+        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    ]);
+
+    let mut nonce = 0u64;
+    loop \\\{{
+        block.nonce = nonce;
+        if difficulty.satisfies(&block.pow_hash()) \\\{{
+            break;
+        \\\}}
+        nonce += 1;
+    \\\}}
+
+    chain.process_block(block.clone()).unwrap();
+
+    c.bench_function("block_validation", |b| \\\{{
+        b.iter(|| \\\{{
+            black_box(chain.process_block(block.clone()));
+        \\\}})
+    \\\}});
+\\\}}
+
+fn bench_mining(c: &mut Criterion) \\\{{
+    let keys = generate_keypair();
+    let dir = tempfile::tempdir().unwrap();
+    let chain = Blockchain::open(dir.path(), ChainConfig::mainnet()).unwrap();
+
+    let payload = Payload([0u8; \\{{consensus.payload_size_bytes\\\}}]);
+    let block = chain.build_block(keys.verifying_key().to_bytes(), 0, vec![payload]).unwrap();
+
+    let difficulty = Difficulty::new([
+        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    ]);
+
+    c.bench_function("scrypt_pow", |b| \\\{{
+        let mut block = block.clone();
+        let mut nonce = 0u64;
+        b.iter(|| \\\{{
+            block.nonce = nonce;
+            black_box(difficulty.satisfies(&block.pow_hash()));
+            nonce += 1;
+        \\\}})
+    \\\}});
+\\\}}
+
+fn bench_storage(c: &mut Criterion) \\\{{
+    let keys = generate_keypair();
+    let dir = tempfile::tempdir().unwrap();
+    let mut chain = Blockchain::open(dir.path(), ChainConfig::mainnet()).unwrap();
+
+    let payload = Payload([0u8; \\{{consensus.payload_size_bytes\\\}}]);
+    let mut block = chain.build_block(keys.verifying_key().to_bytes(), 0, vec![payload]).unwrap();
+
+    let difficulty = Difficulty::new([
+        0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    ]);
+
+    let mut nonce = 0u64;
+    loop \\\{{
+        block.nonce = nonce;
+        if difficulty.satisfies(&block.pow_hash()) \\\{{
+            break;
+        \\\}}
+        nonce += 1;
+    \\\}}
+
+    c.bench_function("block_storage", |b| \\\{{
+        let mut chain = Blockchain::open(dir.path(), ChainConfig::mainnet()).unwrap();
+        b.iter(|| \\\{{
+            black_box(chain.process_block(block.clone()));
+        \\\}})
+    \\\}});
+\\\}}
+
+criterion_group!(benches, bench_block_validation, bench_mining, bench_storage);
+criterion_main!(benches);

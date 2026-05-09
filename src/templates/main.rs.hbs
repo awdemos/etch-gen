@@ -1,0 +1,21 @@
+use clap::Parser;
+use {{design_name}}::cli::{Cli, Commands};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt::init();
+    let cli = Cli::parse();
+
+    match cli.command {
+        Commands::GenerateKey {} => {
+            let keypair = {{design_name}}::crypto::generate_keypair();
+            println!("address:  {}", hex::encode(keypair.verifying_key().to_bytes()));
+            println!("secret:   {}", hex::encode(keypair.to_bytes()));
+        }
+        _ => {
+            println!("Command not yet implemented");
+        }
+    }
+
+    Ok(())
+}

@@ -1,0 +1,33 @@
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use rand::rngs::OsRng;
+use sha2::{Digest, Sha256};
+
+pub fn generate_keypair() -> SigningKey {
+    SigningKey::generate(&mut OsRng)
+}
+
+pub fn sign_block(signing_key: &SigningKey, block_hash: &[u8; 32]) -> Signature {
+    signing_key.sign(block_hash)
+}
+
+pub fn verify_block_signature(
+    verifying_key: &VerifyingKey,
+    block_hash: &[u8; 32],
+    signature: &Signature,
+) -> bool {
+    verifying_key.verify(block_hash, signature).is_ok()
+}
+
+pub fn address_from_public_key(public_key: &VerifyingKey) -> [u8; 32] {
+    let bytes = public_key.to_bytes();
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    hasher.finalize().into()
+}
+
+pub fn load_keypair(secret_hex: &str) -> Result<SigningKey, hex::FromHexError> {
+    let bytes = hex::decode(secret_hex)?;
+    let mut key_bytes = [0u8; 32];
+    key_bytes.copy_from_slice(&bytes[..32]);
+    Ok(SigningKey::from_bytes(&key_bytes))
+}

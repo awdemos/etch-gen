@@ -1,0 +1,40 @@
+use crate::types::{Block, Difficulty};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+pub struct Miner {
+    stop_flag: Arc<AtomicBool>,
+}
+
+impl Miner {
+    pub fn new() -> Self {
+        Self {
+            stop_flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub fn mine_block(&self, mut block: Block, difficulty: &Difficulty) -> Option<Block> {
+        let mut nonce = 0u64;
+        while !self.stop_flag.load(Ordering::Relaxed) {
+            block.nonce = nonce;
+            if difficulty.satisfies(&block.pow_hash()) {
+                return Some(block);
+            }
+            nonce += 1;
+            if nonce % 1_000_000 == 0 {
+                tracing::info!("Mined {} hashes...", nonce);
+            }
+        }
+        None
+    }
+
+    pub fn stop(&self) {
+        self.stop_flag.store(true, Ordering::Relaxed);
+    }
+}
+
+impl Default for Miner {
+    fn default() -> Self {
+        Self::new()
+    }
+}

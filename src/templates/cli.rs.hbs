@@ -1,0 +1,30 @@
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(name = "{{design_name}}")]
+#[command(about = "{{description}}")]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    GenerateKey,
+    SubmitPayload {
+        #[arg(short, long)]
+        payload: String,
+    },
+    Mine {
+        #[arg(short, long)]
+        data_dir: std::path::PathBuf,
+        #[arg(short, long)]
+        secret: String,
+    },
+    Node {
+        #[arg(short, long)]
+        data_dir: std::path::PathBuf,
+        #[arg(short, long)]
+        peer: Vec<String>,
+    },
+}

@@ -1,0 +1,88 @@
+use crate::types::Block;
+use futures::StreamExt;
+use libp2p::{
+    gossipsub, identify, noise, ping, tcp, yamux, Multiaddr, PeerId, Transport,
+};
+use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
+use std::time::Duration;
+
+#[derive(NetworkBehaviour)]
+pub struct EtchBehaviour {
+    pub gossipsub: gossipsub::Behaviour,
+    pub identify: identify::Behaviour,
+    pub ping: ping::Behaviour,
+}
+
+pub struct P2PNode {
+    swarm: libp2p::Swarm<EtchBehaviour>,
+}
+
+impl P2PNode {
+    pub async fn new(listen_port: u16) -> Result<Self, Box<dyn std::error::Error>> {
+        let id_keys = libp2p::identity::Keypair::generate_ed25519();
+        let peer_id = PeerId::from(id_keys.public());
+        tracing::info!("Local peer id: {}", peer_id);
+
+        let transport = tcp::tokio::Transport::new(tcp::Config::default())
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(noise::Config::new(&id_keys)?)
+            .multiplex(yamux::Config::default())
+            .boxed();
+
+        let gossipsub_config = gossipsub::ConfigBuilder::default()
+            .heartbeat_interval(Duration::from_secs({{network.gossipsub_heartbeat_secs}}))
+            .validation_mode(gossipsub::ValidationMode::Strict)
+            .build()?;
+
+        let mut gossipsub = gossipsub::Behaviour::new(
+            gossipsub::MessageAuthenticity::Signed(id_keys.clone()),
+            gossipsub_config,
+        )?;
+
+        let topic = gossipsub::IdentTopic::new("etch_blocks");
+        gossipsub.subscribe(&topic)?;
+
+        let behaviour = EtchBehaviour {
+            gossipsub,
+            identify: identify::Behaviour::new(identify::Config::new(
+                "{{network.p2p_protocol_version}}".to_string(),
+                id_keys.public(),
+            )),
+            ping: ping::Behaviour::new(ping::Config::new()),
+        };
+
+        let mut swarm = libp2p::Swarm::new(
+            transport,
+            behaviour,
+            peer_id,
+            libp2p::swarm::Config::with_tokio_executor(),
+        );
+
+        let listen_addr: Multiaddr = format!("/ip4/0.0.0.0/tcp/{}", listen_port).parse()?;
+        swarm.listen_on(listen_addr)?;
+
+        Ok(Self { swarm })
+    }
+
+    pub async fn run(mut self) {
+        loop {
+            match self.swarm.select_next_some().await {
+                SwarmEvent::Behaviour(EtchBehaviourEvent::Gossipsub(gossipsub::Event::Message { message, .. })) => {
+                    tracing::info!("Received block: {} bytes", message.data.len());
+                }
+                SwarmEvent::NewListenAddr { address, .. } => {
+                    tracing::info!("Listening on {}", address);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn publish_block(&mut self, block: &Block) -> Result<(), String> {
+        let topic = gossipsub::IdentTopic::new("etch_blocks");
+        let bytes = postcard::to_stdvec(block).map_err(|e| e.to_string())?;
+        self.swarm.behaviour_mut().gossipsub.publish(topic, bytes)
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+}

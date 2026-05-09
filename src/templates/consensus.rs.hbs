@@ -1,0 +1,124 @@
+use crate::types::{Block, Difficulty, Hash, MAX_PAYLOADS_PER_BLOCK, TARGET_BLOCK_TIME_SECS, DIFFICULTY_VOTE_WINDOW, DIFFICULTY_ADJUSTMENT_PERIOD};
+use crate::storage::BlockStorage;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+pub struct Consensus;
+
+impl Consensus {
+    pub fn validate_block(block: &Block, storage: &BlockStorage, expected_difficulty: &Difficulty) -> Result<(), String> {
+        if !block.verify_payload_count() {
+            return Err("payload count mismatch".to_string());
+        }
+        if !block.verify_merkle_root() {
+            return Err("merkle root mismatch".to_string());
+        }
+        if block.header.previous_hash != [0u8; 32] {
+            let pow_hash = block.pow_hash();
+            if !expected_difficulty.satisfies(&pow_hash) {
+                return Err("insufficient proof of work".to_string());
+            }
+        }
+        if block.payloads.len() > MAX_PAYLOADS_PER_BLOCK {
+            return Err("too many payloads".to_string());
+        }
+        let prev_hash = block.header.previous_hash;
+        if prev_hash != [0u8; 32] && !storage.has_block(&prev_hash) {
+            return Err("previous block not found".to_string());
+        }
+        let current_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        if block.header.timestamp > current_time + TARGET_BLOCK_TIME_SECS {
+            return Err("timestamp too far in future".to_string());
+        }
+        if let Some(prev_block) = storage.get_block(&prev_hash) {
+            if block.header.timestamp <= prev_block.header.timestamp {
+                return Err("timestamp not increasing".to_string());
+            }
+        }
+        Ok(())
+    }
+
+    pub fn compute_difficulty(storage: &BlockStorage, height: u64, parent_hash: &Hash, genesis_difficulty: &Difficulty) -> Difficulty {
+        let _parent = match storage.get_block(parent_hash) {
+            Some(b) => b,
+            None => return genesis_difficulty.clone(),
+        };
+        let parent_height = storage.height_of(parent_hash).unwrap_or(0);
+        let parent_difficulty = Self::difficulty_at_height(storage, parent_height, genesis_difficulty);
+        if height % DIFFICULTY_ADJUSTMENT_PERIOD != 0 {
+            return parent_difficulty;
+        }
+        let votes = Self::collect_votes(storage, parent_height);
+        let mut up = 0u64;
+        let mut down = 0u64;
+        for vote in votes {
+            if vote > 0 { up += 1; }
+            else if vote < 0 { down += 1; }
+        }
+        let mut target = parent_difficulty.target;
+        if up > down && up > DIFFICULTY_VOTE_WINDOW / 2 {
+            target = Self::increase_difficulty(target);
+        } else if down > up && down > DIFFICULTY_VOTE_WINDOW / 2 {
+            target = Self::decrease_difficulty(target);
+        }
+        Difficulty::new(target)
+    }
+
+    pub fn difficulty_at_height(storage: &BlockStorage, height: u64, genesis_difficulty: &Difficulty) -> Difficulty {
+        if height == 0 {
+            return genesis_difficulty.clone();
+        }
+        let block = match storage.get_block_by_height(height) {
+            Some(b) => b,
+            None => return genesis_difficulty.clone(),
+        };
+        Self::compute_difficulty(storage, height, &block.hash(), genesis_difficulty)
+    }
+
+    pub fn cumulative_work(storage: &BlockStorage, tip_hash: &Hash) -> u128 {
+        let mut work = 0u128;
+        let mut current = *tip_hash;
+        while current != [0u8; 32] {
+            if let Some(block) = storage.get_block(&current) {
+                work += 1;
+                current = block.header.previous_hash;
+            } else {
+                break;
+            }
+        }
+        work
+    }
+
+    fn collect_votes(storage: &BlockStorage, end_height: u64) -> Vec<i8> {
+        let start = end_height.saturating_sub(DIFFICULTY_VOTE_WINDOW);
+        let mut votes = Vec::new();
+        for h in start..=end_height {
+            if let Some(block) = storage.get_block_by_height(h) {
+                votes.push(block.header.difficulty_vote);
+            }
+        }
+        votes
+    }
+
+    fn increase_difficulty(mut target: Hash) -> Hash {
+        for i in 0..target.len() {
+            if target[i] > 0 {
+                target[i] -= 1;
+                break;
+            }
+        }
+        target
+    }
+
+    fn decrease_difficulty(mut target: Hash) -> Hash {
+        for i in 0..target.len() {
+            if target[i] < 255 {
+                target[i] += 1;
+                break;
+            }
+        }
+        target
+    }
+}
