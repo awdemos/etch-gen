@@ -23,24 +23,57 @@ impl ManifestGenerator {
         writeln!(manifest).unwrap();
 
         writeln!(manifest, "[lib]").unwrap();
-        writeln!(manifest, "name = \"{}\"", design.design_name.replace("-", "_")).unwrap();
+        writeln!(
+            manifest,
+            "name = \"{}\"",
+            design.design_name.replace("-", "_")
+        )
+        .unwrap();
         writeln!(manifest, "path = \"src/lib.rs\"").unwrap();
         writeln!(manifest).unwrap();
 
         writeln!(manifest, "[dependencies]").unwrap();
-        writeln!(manifest, "tokio = {{ version = \"1.43\", features = [\"full\"] }}").unwrap();
-        writeln!(manifest, "serde = {{ version = \"1.0\", features = [\"derive\"] }}").unwrap();
-        writeln!(manifest, "postcard = {{ version = \"1.1\", features = [\"use-std\"] }}").unwrap();
+        writeln!(
+            manifest,
+            "tokio = {{ version = \"1.43\", features = [\"full\"] }}"
+        )
+        .unwrap();
+        writeln!(
+            manifest,
+            "serde = {{ version = \"1.0\", features = [\"derive\"] }}"
+        )
+        .unwrap();
+        writeln!(
+            manifest,
+            "postcard = {{ version = \"1.1\", features = [\"use-std\"] }}"
+        )
+        .unwrap();
         writeln!(manifest, "sha2 = \"0.10\"").unwrap();
-        writeln!(manifest, "scrypt = {{ version = \"0.11\", default-features = false, features = [\"std\"] }}").unwrap();
-        writeln!(manifest, "ed25519-dalek = {{ version = \"2.1\", features = [\"rand_core\"] }}").unwrap();
+        writeln!(
+            manifest,
+            "scrypt = {{ version = \"0.11\", default-features = false, features = [\"std\"] }}"
+        )
+        .unwrap();
+        writeln!(
+            manifest,
+            "ed25519-dalek = {{ version = \"2.1\", features = [\"rand_core\"] }}"
+        )
+        .unwrap();
         writeln!(manifest, "rand = \"0.8\"").unwrap();
         writeln!(manifest, "libp2p = {{ version = \"0.56\", features = [\"tcp\", \"tokio\", \"noise\", \"yamux\", \"gossipsub\", \"request-response\", \"identify\", \"ping\", \"macros\"] }}").unwrap();
         writeln!(manifest, "futures = \"0.3\"").unwrap();
-        writeln!(manifest, "clap = {{ version = \"4.5\", features = [\"derive\"] }}").unwrap();
+        writeln!(
+            manifest,
+            "clap = {{ version = \"4.5\", features = [\"derive\"] }}"
+        )
+        .unwrap();
         writeln!(manifest, "chrono = \"0.4\"").unwrap();
         writeln!(manifest, "tracing = \"0.1\"").unwrap();
-        writeln!(manifest, "tracing-subscriber = {{ version = \"0.3\", features = [\"env-filter\"] }}").unwrap();
+        writeln!(
+            manifest,
+            "tracing-subscriber = {{ version = \"0.3\", features = [\"env-filter\"] }}"
+        )
+        .unwrap();
         writeln!(manifest, "thiserror = \"1.0\"").unwrap();
         writeln!(manifest, "hex = \"0.4\"").unwrap();
         writeln!(manifest, "serde-big-array = \"0.5\"").unwrap();
@@ -48,7 +81,11 @@ impl ManifestGenerator {
         if benchmarks {
             writeln!(manifest).unwrap();
             writeln!(manifest, "[dev-dependencies]").unwrap();
-            writeln!(manifest, "criterion = {{ version = \"0.5\", features = [\"html_reports\"] }}").unwrap();
+            writeln!(
+                manifest,
+                "criterion = {{ version = \"0.5\", features = [\"html_reports\"] }}"
+            )
+            .unwrap();
             writeln!(manifest, "tempfile = \"3.16\"").unwrap();
             writeln!(manifest, "tokio-test = \"0.4\"").unwrap();
             writeln!(manifest).unwrap();

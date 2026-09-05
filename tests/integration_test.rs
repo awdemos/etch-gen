@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 
 #[test]
 fn test_preset_fast_test_generates_compiling_crate() {
@@ -8,9 +8,13 @@ fn test_preset_fast_test_generates_compiling_crate() {
 
     let status = Command::new("cargo")
         .args([
-            "run", "--release", "--",
-            "preset", "fast-test",
-            "--output-dir", output_path.to_str().unwrap(),
+            "run",
+            "--release",
+            "--",
+            "preset",
+            "fast-test",
+            "--output-dir",
+            output_path.to_str().unwrap(),
         ])
         .current_dir("/var/home/a/code/etch-gen")
         .status()
@@ -20,7 +24,10 @@ fn test_preset_fast_test_generates_compiling_crate() {
 
     let crate_dir = output_path.join("fast_test");
     assert!(crate_dir.exists(), "generated crate directory not found");
-    assert!(crate_dir.join("Cargo.toml").exists(), "Cargo.toml not found");
+    assert!(
+        crate_dir.join("Cargo.toml").exists(),
+        "Cargo.toml not found"
+    );
     assert!(crate_dir.join("src/lib.rs").exists(), "lib.rs not found");
     assert!(crate_dir.join("src/main.rs").exists(), "main.rs not found");
 
@@ -40,9 +47,13 @@ fn test_preset_mainnet_generates_compiling_crate() {
 
     let status = Command::new("cargo")
         .args([
-            "run", "--release", "--",
-            "preset", "mainnet",
-            "--output-dir", output_path.to_str().unwrap(),
+            "run",
+            "--release",
+            "--",
+            "preset",
+            "mainnet",
+            "--output-dir",
+            output_path.to_str().unwrap(),
         ])
         .current_dir("/var/home/a/code/etch-gen")
         .status()

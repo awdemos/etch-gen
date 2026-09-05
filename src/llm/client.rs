@@ -101,7 +101,8 @@ impl LlmClient {
             match response {
                 Ok(resp) => {
                     if resp.status().is_success() {
-                        let chat_resp: ChatResponse = resp.json().await.map_err(LlmError::HttpError)?;
+                        let chat_resp: ChatResponse =
+                            resp.json().await.map_err(LlmError::HttpError)?;
                         if let Some(choice) = chat_resp.choices.first() {
                             info!("LLM response received");
                             return Ok(choice.message.content.trim().to_string());

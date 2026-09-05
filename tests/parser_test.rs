@@ -1,4 +1,6 @@
-use etch_gen::design::{BlockchainDesign, ConsensusParameters, OptimizationCriteria, NetworkParameters};
+use etch_gen::design::{
+    BlockchainDesign, ConsensusParameters, NetworkParameters, OptimizationCriteria,
+};
 use etch_gen::llm::DesignParser;
 
 #[test]
@@ -81,7 +83,9 @@ fn test_parser_json_in_markdown() {
 Hope this helps!"#;
 
     let parser = DesignParser::new();
-    let design = parser.parse(markdown).expect("should extract JSON from markdown");
+    let design = parser
+        .parse(markdown)
+        .expect("should extract JSON from markdown");
     assert_eq!(design.design_name, "markdown_chain");
 }
 
@@ -118,7 +122,10 @@ fn test_design_validation_rejects_invalid_scrypt_n() {
         },
     };
 
-    assert!(design.validate().is_err(), "should reject non-power-of-2 scrypt_n");
+    assert!(
+        design.validate().is_err(),
+        "should reject non-power-of-2 scrypt_n"
+    );
 }
 
 #[test]
@@ -154,7 +161,10 @@ fn test_design_validation_rejects_bad_weights() {
         },
     };
 
-    assert!(design.validate().is_err(), "should reject weights that don't sum to 1.0");
+    assert!(
+        design.validate().is_err(),
+        "should reject weights that don't sum to 1.0"
+    );
 }
 
 #[test]

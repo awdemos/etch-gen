@@ -47,3 +47,9 @@ impl DesignParser {
         Ok(trimmed.to_string())
     }
 }
+
+impl Default for DesignParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
