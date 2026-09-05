@@ -9,3 +9,9 @@ impl PromptTemplate {
         user_prompt.to_string()
     }
 }
+
+impl Default for PromptTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}

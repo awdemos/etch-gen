@@ -1,4 +1,6 @@
-use crate::design::{BlockchainDesign, ConsensusParameters, OptimizationCriteria, NetworkParameters};
+use crate::design::{
+    BlockchainDesign, ConsensusParameters, NetworkParameters, OptimizationCriteria,
+};
 
 pub fn mainnet() -> BlockchainDesign {
     BlockchainDesign {
