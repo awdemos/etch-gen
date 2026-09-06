@@ -15,6 +15,12 @@ pub enum ParseError {
 
 pub struct DesignParser;
 
+impl Default for DesignParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DesignParser {
     pub fn new() -> Self {
         Self

@@ -1,5 +1,5 @@
+use std::path::PathBuf;
 use std::process::Command;
-use std::path::Path;
 
 #[test]
 fn test_preset_fast_test_generates_compiling_crate() {
