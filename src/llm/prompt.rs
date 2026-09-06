@@ -1,5 +1,11 @@
 pub struct PromptTemplate;
 
+impl Default for PromptTemplate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PromptTemplate {
     pub fn new() -> Self {
         Self
